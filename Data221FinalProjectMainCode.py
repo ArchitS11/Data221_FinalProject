@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, precision_score, recall_score, f1_score
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, InputLayer, Dropout
 from tensorflow.keras.models import Sequential
@@ -23,7 +23,7 @@ def load_and_prepare_data(train_path='train.csv', test_path='test.csv'):
     y = full_data['Activity']
 
     label_encoder = LabelEncoder()
-    y_encoded = label_encoder.fit_transform(y)
+    y = label_encoder.fit_transform(y)
 
     # Perform the 80/20 stratified split
     X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.20,stratify=y, random_state=42)
@@ -35,9 +35,9 @@ def load_and_prepare_data(train_path='train.csv', test_path='test.csv'):
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    return X_train_scaled, X_test_scaled, y_train, y_test, label_encoder
+    return X_train_scaled, X_test_scaled, y_train, y_test
 
-def run_knn(X_train, X_test, y_train, y_test, label_encoder, k=5):
+def run_knn(X_train, X_test, y_train, y_test, k=5):
     # Create KNN model
     knn = KNeighborsClassifier(n_neighbors=k)
 
@@ -47,21 +47,17 @@ def run_knn(X_train, X_test, y_train, y_test, label_encoder, k=5):
     # Make predictions
     y_pred = knn.predict(X_test)
 
-    # Calculate evaluation metrics
-    #TODO: we're gonna make accuracy, confusion matrix, etc. to another function called evaluate_model()
-    accuracy = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred, target_names=label_encoder.classes_)
-    matrix = confusion_matrix(y_test, y_pred)
+    evaluate_model(knn, y_test, y_pred)
 
-    return accuracy, report, matrix, y_pred
+    return knn
 
-def knn_model(X_train, X_test, y_train, y_test): #kein
+def neural_network_model(X_train, X_test, y_train, y_test): #kein
     #preparing target label using one-hot encoding
     y_train = to_categorical(y_train)
     #this code turns integers to a binary matrix, essential for neural networks
 
     #neural network
-    tf.random_set_seed(1) #seed to ensure model returns the same result
+    tf.random.set_seed(1) #seed to ensure model returns the same result
     neural_network = Sequential()
 
     #input layer
@@ -89,33 +85,37 @@ def knn_model(X_train, X_test, y_train, y_test): #kein
     #TODO: what does this code do? axis?
     #since we have done one-hot encoding, we convert it back to a 1D array with integers 0-6, corresponding to WALKING, STANDING, etc.
 
-    #TODO: evaluate_model(y_test, y_pred)
+    evaluate_model(neural_network, y_test, y_pred)
 
-    return neural_network #save the model
+    return neural_network#save the model
+
+
+def evaluate_model(model_name, y_true, y_pred):
+
+    # Calculate metrics (using 'weighted' because we have 6 activity classes, not just 2)
+    accuracy = accuracy_score(y_true, y_pred)
+    precision = precision_score(y_true, y_pred, average='weighted') #using average='weighted' because we have 6 classes, not 2
+    recall = recall_score(y_true, y_pred, average='weighted')
+    f1 = f1_score(y_true, y_pred, average='weighted')
+    confusion = confusion_matrix(y_true, y_pred)
+
+    # Print the results cleanly
+    print(f"{model_name} Performance")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall: {recall:.4f}")
+    print(f"F1-Score: {f1:.4f}")
+    print("Confusion Matrix:\n", confusion)
+    print("-" * 35 + "\n")
 
 # -----------------------------
 # Main program
 # -----------------------------
 
 #TODO: We don't need to put Main Program into our own repository, just the functions of our model
-X_train, X_test, y_train, y_test, label_encoder = load_and_prepare_data()
+X_train, X_test, y_train, y_test = load_and_prepare_data()
 
+run_knn(X_train, X_test, y_train, y_test)
+neural_network_model(X_train, X_test, y_train, y_test)
 
-accuracy, report, matrix, y_pred = run_knn(
-    X_train,
-    X_test,
-    y_train,
-    y_test,
-    label_encoder,
-    k=5
-)
-
-print("\nKNN Results")
-print("Accuracy:", accuracy)
-
-print("\nClassification Report:")
-print(report)
-
-print("\nConfusion Matrix:")
-print(matrix)
 
