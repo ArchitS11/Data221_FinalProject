@@ -112,7 +112,7 @@ def evaluate_model(model_name, y_true, y_pred):
 
 def decision_tree_model(features_train, features_test, target_train, target_test):
     # Create a new decision tree classifier with the max depth 10 (to control overfitting and underfitting) and the random state 42 (for reproducibility)
-    decisionTreeModel = DecisionTreeClassifier(max_depth=10, random_state=42)
+    decisionTreeModel = DecisionTreeClassifier(max_depth=10, random_state=42, criterion="entropy")  # Make predictions using the entropy criterion
 
     # Train the decision tree model using the features_train and target_train
     decisionTreeModel.fit(features_train, target_train)
