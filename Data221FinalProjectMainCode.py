@@ -127,16 +127,19 @@ def decision_tree_model(features_train, features_test, target_train, target_test
 
 
 def logistic_regression_model(X_train, X_test, y_train, y_test):
+    # Create logistic regression model
     model = LogisticRegression(max_iter=2000, random_state=42)
 
+    # Train the model on the training data
     model.fit(X_train, y_train)
 
+    # Predict the activity labels for the test data
     y_pred = model.predict(X_test)
 
+    # Evaluate the model using shared evaluation function
     evaluate_model("Logistic Regression", y_test, y_pred)
 
     return model
-
 
 # -----------------------------
 # Main program
