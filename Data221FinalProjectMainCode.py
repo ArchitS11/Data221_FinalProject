@@ -6,6 +6,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, precision_score, recall_score, f1_score
 import tensorflow as tf
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
 from tensorflow.keras.layers import Dense, InputLayer, Dropout
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.utils import to_categorical
@@ -120,8 +121,22 @@ def decision_tree_model(features_train, features_test, target_train, target_test
     # Create a variable to store the decision tree's predictions on the testing set.
     decisionTreeModelPredictions = decisionTreeModel.predict(features_test)
 
+
     # return the evaluated results of the decision tree model
     return evaluate_model("Decision Tree Model", target_test, decisionTreeModelPredictions)
+
+
+def logistic_regression_model(X_train, X_test, y_train, y_test):
+    model = LogisticRegression(max_iter=2000, random_state=42)
+
+    model.fit(X_train, y_train)
+
+    y_pred = model.predict(X_test)
+
+    evaluate_model("Logistic Regression", y_test, y_pred)
+
+    return model
+
 
 # -----------------------------
 # Main program
@@ -133,5 +148,5 @@ X_train, X_test, y_train, y_test = load_and_prepare_data()
 run_knn(X_train, X_test, y_train, y_test)
 neural_network_model(X_train, X_test, y_train, y_test)
 decision_tree_model(X_train, X_test, y_train, y_test)
-
+logistic_regression_model(X_train, X_test, y_train, y_test)
 
