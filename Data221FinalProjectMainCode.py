@@ -127,7 +127,9 @@ def decision_tree_model(features_train, features_test, target_train, target_test
     return evaluate_model("Decision Tree Model", target_test, decision_tree_model_predictions)
 
 
+# Bonus Model
 def lstm_model(features_train, features_test, target_train, target_test):
+    # TODO: find optimal max sequence length
     maximum_sequence_length = 200
 
     # Preprocessing
@@ -145,7 +147,16 @@ def lstm_model(features_train, features_test, target_train, target_test):
         truncating="post"
     )
 
-
+    # Building the LSTM model
+    lstmModel = Sequential([
+        tf.keras.layers.Input(shape = (maximum_sequence_length,)),
+        # TODO: Find optimal input dim and output dim
+        tf.keras.layers.Embedding(input_dim=1000, output_dim=64),
+        tf.keras.layers.LSTM(64)
+        Dense(32, activation="relu"),
+        Dropout(0.3),
+        Dense(1, activation="sigmoid")]
+    )
 
 def logistic_regression_model(features_train, features_test, labels_train, labels_test):
     # Create logistic regression model
