@@ -13,49 +13,49 @@ from tensorflow.keras.utils import to_categorical
 
 def load_and_prepare_data(train_path='train.csv', test_path='test.csv'):
     # Load the kaggle datasets
-    train_df = pd.read_csv(train_path)
-    test_df = pd.read_csv(test_path)
+    train_data_frame = pd.read_csv(train_path)
+    test_data_frame = pd.read_csv(test_path)
 
     # Combine them into one large dataset (10,299 instances)
-    full_data = pd.concat([train_df, test_df], ignore_index=True)
+    full_data = pd.concat([train_data_frame, test_data_frame], ignore_index=True)
 
     # Separate features (X) and target (y)
     # We drop 'subject' because it is an identifier, not a sensor feature
-    X = full_data.drop(columns=['Activity', 'subject'])
-    y = full_data['Activity']
+    feature_matrix = full_data.drop(columns=['Activity', 'subject'])
+    target_label = full_data['Activity']
 
     label_encoder = LabelEncoder()
-    y = label_encoder.fit_transform(y)
+    target_label = label_encoder.fit_transform(target_label)
 
     # Perform the 80/20 stratified split
-    X_train, X_test, y_train, y_test = train_test_split(X, y,test_size=0.20,stratify=y, random_state=42)
+    features_train, features_test, labels_train, labels_test = train_test_split(feature_matrix, target_label,test_size=0.20,stratify=target_label, random_state=42)
 
     # Initialize and apply StandardScaler to prevent data leakage
     scaler = StandardScaler()
 
     # Fit ONLY on the training data, then transform both
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+    features_train_scaled = scaler.fit_transform(features_train)
+    features_test_scaled = scaler.transform(features_test)
 
-    return X_train_scaled, X_test_scaled, y_train, y_test
+    return features_train_scaled, features_test_scaled, labels_train, labels_test
 
-def run_knn(X_train, X_test, y_train, y_test, k=5):
+def knn_model(features_train, features_test, labels_train, labels_test, k=3):
     # Create KNN model
     knn = KNeighborsClassifier(n_neighbors=k)
 
     # Train the model
-    knn.fit(X_train, y_train)
+    knn.fit(features_train, labels_train)
 
     # Make predictions
-    y_pred = knn.predict(X_test)
+    predicted_labels = knn.predict(features_test)
 
-    evaluate_model(knn, y_test, y_pred)
+    evaluate_model("K-Nearest Neighbors (KNN) Model", labels_test, predicted_labels)
 
-    return knn
+    return knn #returns the model (saves the brain)
 
-def neural_network_model(X_train, X_test, y_train, y_test): #kein
+def neural_network_model(features_train, features_test, labels_train, labels_test): #kein
     #preparing target label using one-hot encoding
-    y_train = to_categorical(y_train)
+    labels_train = to_categorical(labels_train)
     #this code turns integers to a binary matrix, essential for neural networks
 
     #neural network
@@ -79,27 +79,27 @@ def neural_network_model(X_train, X_test, y_train, y_test): #kein
     neural_network.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     #TODO: Learn what optimizer does, loss, metric; basically the params of compile()
 
-    neural_network.fit(X_train, y_train, epochs=20, batch_size=32)
+    neural_network.fit(features_train, labels_train, epochs=20, batch_size=32)
     #TODO: Learn what batch_size does; 32 is a good number for efficiency; 128,64,32,16,8 are powers of 2
 
-    class_probabilities = neural_network.predict(X_test)
-    y_pred = np.argmax(class_probabilities, axis=1)
+    class_probabilities = neural_network.predict(features_test)
+    predicted_labels = np.argmax(class_probabilities, axis=1)
     #TODO: what does this code do? axis?
     #since we have done one-hot encoding, we convert it back to a 1D array with integers 0-6, corresponding to WALKING, STANDING, etc.
 
-    evaluate_model(neural_network, y_test, y_pred)
+    evaluate_model("Neural Network Model", labels_test, predicted_labels)
 
     return neural_network#save the model
 
 
-def evaluate_model(model_name, y_true, y_pred):
+def evaluate_model(model_name, true_labels, predicted_labels):
 
     # Calculate metrics (using 'weighted' because we have 6 activity classes, not just 2)
-    accuracy = accuracy_score(y_true, y_pred)
-    precision = precision_score(y_true, y_pred, average='weighted') #using average='weighted' because we have 6 classes, not 2
-    recall = recall_score(y_true, y_pred, average='weighted')
-    f1 = f1_score(y_true, y_pred, average='weighted')
-    confusion = confusion_matrix(y_true, y_pred)
+    accuracy = accuracy_score(true_labels, predicted_labels)
+    precision = precision_score(true_labels, predicted_labels, average='weighted') #using average='weighted' because we have 6 classes, not 2
+    recall = recall_score(true_labels, predicted_labels, average='weighted')
+    f1 = f1_score(true_labels, predicted_labels, average='weighted')
+    confusion = confusion_matrix(true_labels, predicted_labels)
 
     # Print the results cleanly
     print(f"{model_name} Performance")
@@ -113,43 +113,42 @@ def evaluate_model(model_name, y_true, y_pred):
 
 def decision_tree_model(features_train, features_test, target_train, target_test):
     # Create a new decision tree classifier with the max depth 10 (to control overfitting and underfitting) and the random state 42 (for reproducibility)
-    decisionTreeModel = DecisionTreeClassifier(max_depth=10, random_state=42, criterion="entropy")  # Make predictions using the entropy criterion
+    decision_tree = DecisionTreeClassifier(max_depth=10, random_state=42, criterion="entropy")  # Make predictions using the entropy criterion
 
     # Train the decision tree model using the features_train and target_train
-    decisionTreeModel.fit(features_train, target_train)
+    decision_tree.fit(features_train, target_train)
 
     # Create a variable to store the decision tree's predictions on the testing set.
-    decisionTreeModelPredictions = decisionTreeModel.predict(features_test)
+    decision_tree_model_predictions = decision_tree.predict(features_test)
 
 
     # return the evaluated results of the decision tree model
-    return evaluate_model("Decision Tree Model", target_test, decisionTreeModelPredictions)
+    return evaluate_model("Decision Tree Model", target_test, decision_tree_model_predictions)
 
 
-def logistic_regression_model(X_train, X_test, y_train, y_test):
+def logistic_regression_model(features_train, features_test, labels_train, labels_test):
     # Create logistic regression model
-    model = LogisticRegression(max_iter=2000, random_state=42)
+    logistic_regression = LogisticRegression(max_iter=2000, random_state=42)
 
     # Train the model on the training data
-    model.fit(X_train, y_train)
+    logistic_regression.fit(features_train, labels_train)
 
     # Predict the activity labels for the test data
-    y_pred = model.predict(X_test)
+    predicted_labels = logistic_regression.predict(features_test)
 
     # Evaluate the model using shared evaluation function
-    evaluate_model("Logistic Regression", y_test, y_pred)
+    evaluate_model("Logistic Regression Model", labels_test, predicted_labels)
 
-    return model
+    return logistic_regression
 
 # -----------------------------
 # Main program
 # -----------------------------
 
-#TODO: We don't need to put Main Program into our own repository, just the functions of our model
-X_train, X_test, y_train, y_test = load_and_prepare_data()
+features_train, features_test, labels_train, labels_test = load_and_prepare_data()
 
-run_knn(X_train, X_test, y_train, y_test)
-neural_network_model(X_train, X_test, y_train, y_test)
-decision_tree_model(X_train, X_test, y_train, y_test)
-logistic_regression_model(X_train, X_test, y_train, y_test)
+knn_model(features_train, features_test, labels_train, labels_test)
+neural_network_model(features_train, features_test, labels_train, labels_test)
+decision_tree_model(features_train, features_test, labels_train, labels_test)
+logistic_regression_model(features_train, features_test, labels_train, labels_test)
 
