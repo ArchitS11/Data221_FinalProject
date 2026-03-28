@@ -152,10 +152,25 @@ def lstm_model(features_train, features_test, target_train, target_test):
         tf.keras.layers.Input(shape = (maximum_sequence_length,)),
         # TODO: Find optimal input dim and output dim
         tf.keras.layers.Embedding(input_dim=1000, output_dim=64),
-        tf.keras.layers.LSTM(64)
+        tf.keras.layers.LSTM(64),
         Dense(32, activation="relu"),
         Dropout(0.3),
         Dense(1, activation="sigmoid")]
+    )
+
+    # Compile and train the LSTM model
+    lstmModel.compile(
+        optimizer="adam",
+        loss = "binary_crossentropy",
+        metrics=["accuracy"]
+    )
+    # TODO: find optimal values here as well
+    training_history = lstmModel.fit(
+        features_train,
+        features_test,
+        validation_split=0.1,
+        epochs=3,
+        batch_size=64
     )
 
 def logistic_regression_model(features_train, features_test, labels_train, labels_test):
