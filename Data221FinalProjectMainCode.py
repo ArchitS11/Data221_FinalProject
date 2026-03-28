@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from tensorflow.keras.layers import Dense, InputLayer, Dropout
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 def load_and_prepare_data(train_path='train.csv', test_path='test.csv'):
     # Load the kaggle datasets
@@ -126,6 +127,26 @@ def decision_tree_model(features_train, features_test, target_train, target_test
     return evaluate_model("Decision Tree Model", target_test, decision_tree_model_predictions)
 
 
+def lstm_model(features_train, features_test, target_train, target_test):
+    maximum_sequence_length = 200
+
+    # Preprocessing
+    features_train = pad_sequences(
+        features_train,
+        maxlen=maximum_sequence_length,
+        padding="post",
+        truncating="post"
+    )
+
+    features_test = pad_sequences(
+        features_test,
+        maxlen=maximum_sequence_length,
+        padding="post",
+        truncating="post"
+    )
+
+
+
 def logistic_regression_model(features_train, features_test, labels_train, labels_test):
     # Create logistic regression model
     logistic_regression = LogisticRegression(max_iter=2000, random_state=42)
@@ -147,8 +168,8 @@ def logistic_regression_model(features_train, features_test, labels_train, label
 
 features_train, features_test, labels_train, labels_test = load_and_prepare_data()
 
-knn_model(features_train, features_test, labels_train, labels_test)
-neural_network_model(features_train, features_test, labels_train, labels_test)
-decision_tree_model(features_train, features_test, labels_train, labels_test)
-logistic_regression_model(features_train, features_test, labels_train, labels_test)
-
+#knn_model(features_train, features_test, labels_train, labels_test)
+#neural_network_model(features_train, features_test, labels_train, labels_test)
+#decision_tree_model(features_train, features_test, labels_train, labels_test)
+#logistic_regression_model(features_train, features_test, labels_train, labels_test)
+lstm_model(features_train, features_test, labels_train, labels_test)
