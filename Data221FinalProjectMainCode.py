@@ -98,8 +98,8 @@ def neural_network_model(features_train, features_test, labels_train, labels_tes
     )
 
     param_grid = { #the test hidden layer sizes for GridCV
-        'layer_1_size': [128, 256, 512],
-        'layer_2_size': [64, 128, 256]
+        'layer_1_size': [128, 256],
+        'layer_2_size': [64, 128]
     } #TODO: CHANGE THE DIMENSIONS OF THESE LAYERS TO LOWER THE TIME IT TAKES
 
     print("Cross-validation using GridSearchCV for Neural Networks: ")
@@ -110,7 +110,6 @@ def neural_network_model(features_train, features_test, labels_train, labels_tes
 
     print(f"The best hidden layer sizes were: {grid.best_params_}")
 
-    # 5. Extract the absolute smartest brain
     # We use .model_ to rip off the Scikit-Learn costume and get the pure TensorFlow model back
     best_neural_model = grid.best_estimator_.model_
 
@@ -155,10 +154,8 @@ def decision_tree_model(features_train, features_test, target_train, target_test
     # Create a variable to store the decision tree's predictions on the testing set.
     decision_tree_model_predictions = decision_tree.predict(features_test)
 
-
     # return the evaluated results of the decision tree model
     return evaluate_model("Decision Tree Model", target_test, decision_tree_model_predictions)
-
 
 # Bonus Model
 def lstm_model(features_train, features_test, target_train, target_test):
