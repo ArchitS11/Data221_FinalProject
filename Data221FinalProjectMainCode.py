@@ -11,6 +11,9 @@ from tensorflow.keras.layers import Dense, InputLayer, Dropout
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from scikeras.wrappers import KerasClassifier
+from sklearn.model_selection import GridSearchCV
+
 
 def load_and_prepare_data(train_path='train.csv', test_path='test.csv'):
     # Load the kaggle datasets
@@ -54,43 +57,73 @@ def knn_model(features_train, features_test, labels_train, labels_test, k=3):
 
     return knn #returns the model (saves the brain)
 
-def neural_network_model(features_train, features_test, labels_train, labels_test): #kein
-    #preparing target label using one-hot encoding
-    labels_train = to_categorical(labels_train)
-    #this code turns integers to a binary matrix, essential for neural networks
 
-    #neural network
-    tf.random.set_seed(1) #seed to ensure model returns the same result
-    neural_network = Sequential()
+def neural_network_model(features_train, features_test, labels_train, labels_test):  # kein
+    # preparing target label using one-hot encoding
+    labels_train_encoded = to_categorical(labels_train)
 
-    #input layer
-    neural_network.add(InputLayer(input_shape=(561,))) #561 features = 561 input layers
+    # this code turns integers to a binary matrix, essential for neural networks
 
-    #hidden layers
-    neural_network.add(Dense(256, activation='relu')) #hidden layer 1, 256 neurons
-    #data scientists use numbers like 512, 256, 128, 64, etc. for efficiency
-    neural_network.add(Dropout(0.3)) #prevents overfitting by randomly deactivating 30% of neurons
-    #TODO: Learn what Dropout() does
-    neural_network.add(Dense(128, activation='relu'))
+    #nested function to build a neural network model with default sizes 256 hidden layer 1 and 128 hidden layer 2
+    def build_neural_model(layer_1_size=256, layer_2_size=128):
+        tf.random.set_seed(1)  # seed to ensure model returns the same result
+        neural_model = Sequential()
 
-    #output layer
-    neural_network.add(Dense(6, activation='softmax'))
+        # input layer
+        neural_model.add(InputLayer(shape=(561,)))  # 561 features = 561 input layers
 
-    #compile model
-    neural_network.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    #TODO: Learn what optimizer does, loss, metric; basically the params of compile()
+        # hidden layers (Sizes are now completely tunable!)
+        neural_model.add(Dense(layer_1_size, activation='relu'))
+        neural_model.add(Dropout(0.3))  # prevents overfitting by randomly deactivating 30% of neurons
+        # TODO: Learn what Dropout() does
 
-    neural_network.fit(features_train, labels_train, epochs=20, batch_size=32)
-    #TODO: Learn what batch_size does; 32 is a good number for efficiency; 128,64,32,16,8 are powers of 2
+        neural_model.add(Dense(layer_2_size, activation='relu'))
 
-    class_probabilities = neural_network.predict(features_test)
+        # output layer
+        neural_model.add(Dense(6, activation='softmax'))
+
+        # compile model
+        neural_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        # TODO: Learn what optimizer does, loss, metric; basically the params of compile()
+
+        return neural_model
+
+    # 2. THE TRANSLATOR: Put the Scikit-Learn "costume" on our TensorFlow factory
+    keras_estimator = KerasClassifier(
+        model=build_neural_model,
+        layer_1_size=256,  # Give it default starting values
+        layer_2_size=128,
+        epochs=15,
+        batch_size=32,  # TODO: Learn what batch_size does; 128,64,32,16,8 are powers of 2
+    )
+
+    param_grid = { #the test hidden layer sizes for GridCV
+        'layer_1_size': [128, 256, 512],
+        'layer_2_size': [64, 128, 256]
+    } #TODO: CHANGE THE DIMENSIONS OF THESE LAYERS TO LOWER THE TIME IT TAKES
+
+    print("Cross-validation using GridSearchCV for Neural Networks: ")
+    grid = GridSearchCV(estimator=keras_estimator, param_grid=param_grid, cv=3, scoring='accuracy') #cross validation with 3 folds
+
+    # Run the tournament!
+    grid.fit(features_train, labels_train_encoded)
+
+    print(f"The best hidden layer sizes were: {grid.best_params_}")
+
+    # 5. Extract the absolute smartest brain
+    # We use .model_ to rip off the Scikit-Learn costume and get the pure TensorFlow model back
+    best_neural_model = grid.best_estimator_.model_
+
+    # Make predictions using the winning TensorFlow model
+    class_probabilities = best_neural_model.predict(features_test)
     predicted_labels = np.argmax(class_probabilities, axis=1)
-    #TODO: what does this code do? axis?
-    #since we have done one-hot encoding, we convert it back to a 1D array with integers 0-6, corresponding to WALKING, STANDING, etc.
+    # TODO: what does this code do? axis?
+    # since we have done one-hot encoding, we convert it back to a 1D array with integers 0-5
 
-    evaluate_model("Neural Network Model", labels_test, predicted_labels)
+    # Evaluate the winning model
+    evaluate_model("Neural Network", labels_test, predicted_labels)
 
-    return neural_network#save the model
+    return best_neural_model  # save the smartest model
 
 
 def evaluate_model(model_name, true_labels, predicted_labels):
@@ -196,7 +229,7 @@ def logistic_regression_model(features_train, features_test, labels_train, label
 features_train, features_test, labels_train, labels_test = load_and_prepare_data()
 
 #knn_model(features_train, features_test, labels_train, labels_test)
-#neural_network_model(features_train, features_test, labels_train, labels_test)
+neural_network_model(features_train, features_test, labels_train, labels_test)
 #decision_tree_model(features_train, features_test, labels_train, labels_test)
 #logistic_regression_model(features_train, features_test, labels_train, labels_test)
-lstm_model(features_train, features_test, labels_train, labels_test)
+#lstm_model(features_train, features_test, labels_train, labels_test)
