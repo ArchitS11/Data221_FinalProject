@@ -227,6 +227,5 @@ features_train, features_test, labels_train, labels_test = load_and_prepare_data
 #neural_network_model(features_train, features_test, labels_train, labels_test)
 #decision_tree_model(features_train, features_test, labels_train, labels_test)
 #logistic_regression_model(features_train, features_test, labels_train, labels_test)
-#logistic regression achieved the highest accuracy
 #lstm_model(features_train, features_test, labels_train, labels_test)
 
