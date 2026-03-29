@@ -225,8 +225,9 @@ def logistic_regression_model(features_train, features_test, labels_train, label
 
 features_train, features_test, labels_train, labels_test = load_and_prepare_data()
 
-#knn_model(features_train, features_test, labels_train, labels_test)
-neural_network_model(features_train, features_test, labels_train, labels_test)
-#decision_tree_model(features_train, features_test, labels_train, labels_test)
-#logistic_regression_model(features_train, features_test, labels_train, labels_test)
+#knn_model(features_train, features_test, labels_train, labels_test) #0.9655 acc
+#neural_network_model(features_train, features_test, labels_train, labels_test) #about 0.9670acc
+#decision_tree_model(features_train, features_test, labels_train, labels_test) #0.9398 acc
+#logistic_regression_model(features_train, features_test, labels_train, labels_test) #0.9859 accuracy
+#logistic regression achieved the highest accuracy
 #lstm_model(features_train, features_test, labels_train, labels_test)
