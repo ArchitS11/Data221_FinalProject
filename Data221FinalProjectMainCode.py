@@ -59,6 +59,7 @@ def knn_model(features_train, features_test, labels_train, labels_test, k=3):
 
 
 def neural_network_model(features_train, features_test, labels_train, labels_test):  # kein
+    #With assistance from Gemini to come up with implementation strategy and SciKeras
     # preparing target label using one-hot encoding
     labels_train_encoded = to_categorical(labels_train)
 
@@ -88,10 +89,9 @@ def neural_network_model(features_train, features_test, labels_train, labels_tes
 
         return neural_model
 
-    # 2. THE TRANSLATOR: Put the Scikit-Learn "costume" on our TensorFlow factory
     keras_estimator = KerasClassifier(
         model=build_neural_model,
-        layer_1_size=256,  # Give it default starting values
+        layer_1_size=256,  #default values
         layer_2_size=128,
         epochs=15,
         batch_size=32,  # TODO: Learn what batch_size does; 128,64,32,16,8 are powers of 2
@@ -105,21 +105,19 @@ def neural_network_model(features_train, features_test, labels_train, labels_tes
     print("Cross-validation using GridSearchCV for Neural Networks: ")
     grid = GridSearchCV(estimator=keras_estimator, param_grid=param_grid, cv=3, scoring='accuracy') #cross validation with 3 folds
 
-    # Run the tournament!
     grid.fit(features_train, labels_train_encoded)
 
     print(f"The best hidden layer sizes were: {grid.best_params_}")
 
-    # We use .model_ to rip off the Scikit-Learn costume and get the pure TensorFlow model back
-    best_neural_model = grid.best_estimator_.model_
+    best_neural_model = grid.best_estimator_.model_ #get model
 
-    # Make predictions using the winning TensorFlow model
+    # predicting using the best neural model
     class_probabilities = best_neural_model.predict(features_test)
     predicted_labels = np.argmax(class_probabilities, axis=1)
     # TODO: what does this code do? axis?
     # since we have done one-hot encoding, we convert it back to a 1D array with integers 0-5
 
-    # Evaluate the winning model
+    # Evaluate the best neural model
     evaluate_model("Neural Network", labels_test, predicted_labels)
 
     return best_neural_model  # save the smartest model
@@ -225,9 +223,9 @@ def logistic_regression_model(features_train, features_test, labels_train, label
 
 features_train, features_test, labels_train, labels_test = load_and_prepare_data()
 
-#knn_model(features_train, features_test, labels_train, labels_test) #0.9655 acc
-#neural_network_model(features_train, features_test, labels_train, labels_test) #about 0.9670acc
-#decision_tree_model(features_train, features_test, labels_train, labels_test) #0.9398 acc
-#logistic_regression_model(features_train, features_test, labels_train, labels_test) #0.9859 accuracy
-#logistic regression achieved the highest accuracy
+#knn_model(features_train, features_test, labels_train, labels_test)
+#neural_network_model(features_train, features_test, labels_train, labels_test)
+#decision_tree_model(features_train, features_test, labels_train, labels_test)
+#logistic_regression_model(features_train, features_test, labels_train, labels_test)
 #lstm_model(features_train, features_test, labels_train, labels_test)
+
