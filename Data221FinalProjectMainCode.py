@@ -143,17 +143,23 @@ def evaluate_model(model_name, true_labels, predicted_labels):
 
 
 def decision_tree_model(features_train, features_test, target_train, target_test):
-    # Create a new decision tree classifier with the max depth 10 (to control overfitting and underfitting) and the random state 42 (for reproducibility)
-    decision_tree = DecisionTreeClassifier(max_depth=10, random_state=42, criterion="entropy")  # Make predictions using the entropy criterion
+    # Create a new decision tree classifier with the max depth 10 (to control overfitting and underfitting)
+    # Note: max_depth of 10 is optimal from rigorous experimenting on the model separately.
+    # and the random state 42 (for reproducibility)
+    #  Make predictions using the entropy criterion.
+    decisionTreeModel = DecisionTreeClassifier(max_depth=10, random_state=42, criterion="entropy")
 
     # Train the decision tree model using the features_train and target_train
-    decision_tree.fit(features_train, target_train)
+    decisionTreeModel.fit(features_train, target_train)
 
     # Create a variable to store the decision tree's predictions on the testing set.
-    decision_tree_model_predictions = decision_tree.predict(features_test)
+    decision_tree_model_predictions = decisionTreeModel.predict(features_test)
+
+    # Evaluate the model using the evaluate_model function
+    evaluate_model("Decision Tree Model", target_test, decision_tree_model_predictions)
 
     # return the evaluated results of the decision tree model
-    return evaluate_model("Decision Tree Model", target_test, decision_tree_model_predictions)
+    return decisionTreeModel
 
 # Bonus Model
 def lstm_model(features_train, features_test, target_train, target_test):
