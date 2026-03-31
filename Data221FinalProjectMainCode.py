@@ -75,9 +75,6 @@ def neural_network_model(features_train, features_test, labels_train, labels_tes
 
         # hidden layers (Sizes are now completely tunable!)
         neural_model.add(Dense(layer_1_size, activation='relu'))
-        neural_model.add(Dropout(0.3))  # prevents overfitting by randomly deactivating 30% of neurons
-        # TODO: Learn what Dropout() does
-
         neural_model.add(Dense(layer_2_size, activation='relu'))
 
         # output layer
@@ -85,22 +82,17 @@ def neural_network_model(features_train, features_test, labels_train, labels_tes
 
         # compile model
         neural_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-        # TODO: Learn what optimizer does, loss, metric; basically the params of compile()
 
         return neural_model
 
-    keras_estimator = KerasClassifier(
-        model=build_neural_model,
-        layer_1_size=256,  #default values
-        layer_2_size=128,
-        epochs=15,
-        batch_size=32,  # TODO: Learn what batch_size does; 128,64,32,16,8 are powers of 2
+    keras_estimator = KerasClassifier( #calls nested blueprint above
+        model=build_neural_model , layer_1_size=256, layer_2_size=128, epochs=15, batch_size=32
     )
 
     param_grid = { #the test hidden layer sizes for GridCV
         'layer_1_size': [128, 256],
         'layer_2_size': [64, 128]
-    } #TODO: CHANGE THE DIMENSIONS OF THESE LAYERS TO LOWER THE TIME IT TAKES
+    }
 
     print("Cross-validation using GridSearchCV for Neural Networks: ")
     grid = GridSearchCV(estimator=keras_estimator, param_grid=param_grid, cv=3, scoring='accuracy') #cross validation with 3 folds
@@ -114,7 +106,6 @@ def neural_network_model(features_train, features_test, labels_train, labels_tes
     # predicting using the best neural model
     class_probabilities = best_neural_model.predict(features_test)
     predicted_labels = np.argmax(class_probabilities, axis=1)
-    # TODO: what does this code do? axis?
     # since we have done one-hot encoding, we convert it back to a 1D array with integers 0-5
 
     # Evaluate the best neural model
