@@ -135,7 +135,7 @@ def evaluate_model(model_name, true_labels, predicted_labels):
 
 def decision_tree_model(features_train, features_test, target_train, target_test):
     # Create a new decision tree classifier with the max depth 10 (to control overfitting and underfitting)
-    # Note: max_depth of 10 is optimal from rigorous experimenting on the model separately.
+    # Note: max_depth of 10 is optimal value obtained from rigorous experimenting on the model separately.
     # and the random state 42 (for reproducibility)
     #  Make predictions using the entropy criterion.
     decisionTreeModel = DecisionTreeClassifier(max_depth=10, random_state=42, criterion="entropy")
@@ -149,7 +149,7 @@ def decision_tree_model(features_train, features_test, target_train, target_test
     # Evaluate the model using the evaluate_model function
     evaluate_model("Decision Tree Model", target_test, decision_tree_model_predictions)
 
-    # return the evaluated results of the decision tree model
+    # return the decision tree model
     return decisionTreeModel
 
 # Bonus Model
@@ -211,7 +211,7 @@ def lstm_model(features_train, features_test, target_train, target_test):
         target_train,
         epochs=20,
         batch_size=64,  # Feed 64 samples at a time
-        verbose=0
+        verbose=1
     )
 
     # Get predicted class indices (argmax picks the highest probability class)
