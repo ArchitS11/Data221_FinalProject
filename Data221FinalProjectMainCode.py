@@ -11,9 +11,8 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.utils import to_categorical
 from scikeras.wrappers import KerasClassifier
 from sklearn.model_selection import GridSearchCV
-
 from tensorflow.keras.layers import Dense, InputLayer, Dropout, LSTM, BatchNormalization
-from tensorflow.keras.callbacks import EarlyStopping
+
 
 
 def load_and_prepare_data(train_path='train.csv', test_path='test.csv'):
@@ -174,20 +173,19 @@ def lstm_model(features_train, features_test, target_train, target_test):
     features_train_lstm = features_train.reshape(features_train.shape[0], features_train.shape[1], 1)
     features_test_lstm = features_test.reshape(features_test.shape[0], features_test.shape[1], 1)
 
-
+    # Build the LSTM model
     lstmModel = Sequential([
 
         # Input shape: (561 timesteps, 1 feature per timestep)
         tf.keras.layers.Input(shape=(features_train_lstm.shape[1], 1)),
 
-        # First LSTM layer — return_sequences=True passes the full sequence
-        # to the next LSTM layer rather than just the final output
+        # First LSTM layer, return_sequences=True passes the full sequence
         LSTM(32, return_sequences=True),
 
         # Normalise activations between layers to stabilise and speed up training
         BatchNormalization(),
 
-        # Second LSTM layer — return_sequences=False (default) because
+        # Second LSTM layer return_sequences=False (default) because
         # we only need the final output for classification
         LSTM(16, return_sequences=False),
 
@@ -196,8 +194,7 @@ def lstm_model(features_train, features_test, target_train, target_test):
         # Fully connected layer to learn higher-level combinations of LSTM outputs
         Dense(32, activation="relu"),
 
-        # Dropout randomly disables 30% of neurons during training
-        # to prevent the model from overfitting to training data
+        # Dropout randomly disables 30% of neurons during training to prevent the model from overfitting to training data
         Dropout(0.3),
 
         # Output layer — 6 neurons (one per activity class)
@@ -205,43 +202,32 @@ def lstm_model(features_train, features_test, target_train, target_test):
         Dense(6, activation="softmax")
     ])
 
+    # Compile the LSTM model
     lstmModel.compile(
         # Adam adapts the learning rate automatically — good general-purpose optimiser
         optimizer="adam",
 
-        # sparse_categorical_crossentropy is correct here because our labels
+        # use sparse_categorical_crossentropy because our labels
         # are integers (0–5), not one-hot encoded vectors
         loss="sparse_categorical_crossentropy",
 
         metrics=["accuracy"]
     )
 
-    lstmModel.summary()
-
-    # Stops training automatically if validation loss stops improving,
-    # and restores the best weights seen during training.
-    # This prevents overfitting without needing to guess the right epoch count.
-    early_stopping = EarlyStopping(
-        monitor="val_loss",
-        patience=5,  # stop after 5 epochs of no improvement
-        restore_best_weights=True
-    )
-
-    training_history = lstmModel.fit(
+    # Train the LSTM model
+    lstmModel.fit(
         features_train_lstm,
         target_train,
-        validation_data=(features_test_lstm, target_test),
-        epochs=20,  # early stopping will halt this before 50 if appropriate
-        batch_size=64,
-        callbacks=[early_stopping],
-        verbose=1
+        epochs=20,
+        batch_size=64,  # Feed 64 samples at a time
+        verbose=0
     )
-    # ── Evaluate ───────────────────────────────────────────────────────────────
+
     # Get predicted class indices (argmax picks the highest probability class)
-    predictions = np.argmax(lstmModel.predict(features_test_lstm), axis=1)
+    lstmModel_predictions = np.argmax(lstmModel.predict(features_test_lstm), axis=1)
 
     # Use the shared evaluate_model function for consistent reporting
-    evaluate_model("LSTM Model", target_test, predictions)
+    evaluate_model("LSTM Model", target_test, lstmModel_predictions)
     return lstmModel
 
 
@@ -270,5 +256,5 @@ features_train, features_test, labels_train, labels_test = load_and_prepare_data
 #neural_network_model(features_train, features_test, labels_train, labels_test)
 #decision_tree_model(features_train, features_test, labels_train, labels_test)
 #logistic_regression_model(features_train, features_test, labels_train, labels_test)
-lstm_model(features_train, features_test, labels_train, labels_test)
+#lstm_model(features_train, features_test, labels_train, labels_test)
 
