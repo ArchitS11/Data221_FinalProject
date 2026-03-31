@@ -7,12 +7,13 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 import tensorflow as tf
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
-from tensorflow.keras.layers import Dense, InputLayer, Dropout
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 from scikeras.wrappers import KerasClassifier
 from sklearn.model_selection import GridSearchCV
+
+from tensorflow.keras.layers import Dense, InputLayer, Dropout, LSTM, BatchNormalization
+from tensorflow.keras.callbacks import EarlyStopping
 
 
 def load_and_prepare_data(train_path='train.csv', test_path='test.csv'):
@@ -163,49 +164,85 @@ def decision_tree_model(features_train, features_test, target_train, target_test
 
 # Bonus Model
 def lstm_model(features_train, features_test, target_train, target_test):
-    # TODO: find optimal max sequence length
-    maximum_sequence_length = 200
 
-    # Preprocessing
-    features_train = pad_sequences(
-        features_train,
-        maxlen=maximum_sequence_length,
-        padding="post",
-        truncating="post"
-    )
+   # Set random seeds for reproducibility
+    tf.random.set_seed(42)
+    np.random.seed(42)
 
-    features_test = pad_sequences(
-        features_test,
-        maxlen=maximum_sequence_length,
-        padding="post",
-        truncating="post"
-    )
+    # Reshape the Data
+    # Treat each of the 561 sensor readings as 1 timestep with 1 feature value.
+    features_train_lstm = features_train.reshape(features_train.shape[0], features_train.shape[1], 1)
+    features_test_lstm = features_test.reshape(features_test.shape[0], features_test.shape[1], 1)
 
-    # Building the LSTM model
+
     lstmModel = Sequential([
-        tf.keras.layers.Input(shape = (maximum_sequence_length,)),
-        # TODO: Find optimal input dim and output dim
-        tf.keras.layers.Embedding(input_dim=1000, output_dim=64),
-        tf.keras.layers.LSTM(64),
-        Dense(32, activation="relu"),
-        Dropout(0.3),
-        Dense(6, activation="softmax")]
-    )
 
-    # Compile and train the LSTM model
+        # Input shape: (561 timesteps, 1 feature per timestep)
+        tf.keras.layers.Input(shape=(features_train_lstm.shape[1], 1)),
+
+        # First LSTM layer — return_sequences=True passes the full sequence
+        # to the next LSTM layer rather than just the final output
+        LSTM(32, return_sequences=True),
+
+        # Normalise activations between layers to stabilise and speed up training
+        BatchNormalization(),
+
+        # Second LSTM layer — return_sequences=False (default) because
+        # we only need the final output for classification
+        LSTM(16, return_sequences=False),
+
+        BatchNormalization(),
+
+        # Fully connected layer to learn higher-level combinations of LSTM outputs
+        Dense(32, activation="relu"),
+
+        # Dropout randomly disables 30% of neurons during training
+        # to prevent the model from overfitting to training data
+        Dropout(0.3),
+
+        # Output layer — 6 neurons (one per activity class)
+        # Softmax converts raw scores into probabilities that sum to 1
+        Dense(6, activation="softmax")
+    ])
+
     lstmModel.compile(
+        # Adam adapts the learning rate automatically — good general-purpose optimiser
         optimizer="adam",
-        loss = "sparse_categorical_crossentropy",
+
+        # sparse_categorical_crossentropy is correct here because our labels
+        # are integers (0–5), not one-hot encoded vectors
+        loss="sparse_categorical_crossentropy",
+
         metrics=["accuracy"]
     )
-    # TODO: find optimal values here as well
-    training_history = lstmModel.fit(
-        features_train,
-        target_train,
-        validation_data=(features_test, target_test),  # not validation_split
-        epochs=50,
-        batch_size=64
+
+    lstmModel.summary()
+
+    # Stops training automatically if validation loss stops improving,
+    # and restores the best weights seen during training.
+    # This prevents overfitting without needing to guess the right epoch count.
+    early_stopping = EarlyStopping(
+        monitor="val_loss",
+        patience=5,  # stop after 5 epochs of no improvement
+        restore_best_weights=True
     )
+
+    training_history = lstmModel.fit(
+        features_train_lstm,
+        target_train,
+        validation_data=(features_test_lstm, target_test),
+        epochs=20,  # early stopping will halt this before 50 if appropriate
+        batch_size=64,
+        callbacks=[early_stopping],
+        verbose=1
+    )
+    # ── Evaluate ───────────────────────────────────────────────────────────────
+    # Get predicted class indices (argmax picks the highest probability class)
+    predictions = np.argmax(lstmModel.predict(features_test_lstm), axis=1)
+
+    # Use the shared evaluate_model function for consistent reporting
+    evaluate_model("LSTM Model", target_test, predictions)
+    return lstmModel
 
 
 def logistic_regression_model(features_train, features_test, labels_train, labels_test):
@@ -233,5 +270,5 @@ features_train, features_test, labels_train, labels_test = load_and_prepare_data
 #neural_network_model(features_train, features_test, labels_train, labels_test)
 #decision_tree_model(features_train, features_test, labels_train, labels_test)
 #logistic_regression_model(features_train, features_test, labels_train, labels_test)
-#lstm_model(features_train, features_test, labels_train, labels_test)
+lstm_model(features_train, features_test, labels_train, labels_test)
 
